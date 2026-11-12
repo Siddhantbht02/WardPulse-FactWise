@@ -183,7 +183,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         "READING_RECORDED",
         "READING_UPDATED",
         "VISIT_LOGGED",
+        "DISCHARGE_CONFIRMED",
         "DISCHARGE_PROCESSED",
+        "DISCHARGE_ELIGIBLE",
+        "PATIENT_UPDATED",
         "PATIENT_ADMITTED",
         "PATIENT_DECEASED",
         "BED_CLAIMED",
@@ -204,6 +207,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               addToast({
                 type: "warning",
                 message: `Priority Temperature Requested for Room ${data.roomNumber || ""}`,
+              });
+              playAlertSound();
+            } else if (type === "DISCHARGE_CONFIRMED") {
+              addToast({
+                type: "success",
+                message: `Discharge certified by Dr. ${data.doctorName || ""} for Room ${data.roomNumber || ""}! Ready in Discharge Center.`,
               });
               playAlertSound();
             } else if (type === "DISCHARGE_PROCESSED") {

@@ -44,6 +44,7 @@ interface DoctorPatient {
   todayVisit: boolean;
   hasPendingTempRequest: boolean;
   readings?: any[];
+  dischargeConfirmedBy?: string | null;
   pipeline: any;
 }
 
@@ -61,6 +62,7 @@ export default function DoctorDashboardPage() {
   const [clinicalNote, setClinicalNote] = useState("");
   const [treatmentPlan, setTreatmentPlan] = useState("");
   const [medication, setMedication] = useState("");
+  const [confirmDischargeDuringVisit, setConfirmDischargeDuringVisit] = useState(false);
   const [savingVisit, setSavingVisit] = useState(false);
 
   // Mark Deceased Modal
@@ -183,14 +185,40 @@ export default function DoctorDashboardPage() {
       setClinicalNote("Vitals stable. Lungs clear bilaterally. Hydration adequate. Continue current regimen.");
       setTreatmentPlan("Standard quarantine isolation. Monitor daily temperatures.");
       setMedication("Supportive vitamins, oral fluids.");
+      setConfirmDischargeDuringVisit(false);
     } else if (type === "fever") {
       setClinicalNote("Persistent fever spike noted. Mild tachypnea. Mild chest tightness.");
       setTreatmentPlan("Initiate antipyretic protocol. Strict bed rest. Re-measure vitals in 4 hours.");
       setMedication("IV Paracetamol 1g, normal saline 500ml IV.");
+      setConfirmDischargeDuringVisit(false);
     } else if (type === "cured") {
       setClinicalNote("Patient has achieved sustained 3 full fever-free days. Clinical recovery complete.");
       setTreatmentPlan("Fit for discharge. Clearance granted to administration.");
       setMedication("Multivitamin 30d course.");
+      setConfirmDischargeDuringVisit(true);
+    }
+  };
+
+  // Direct Discharge Confirmation (Doctor Sign-off)
+  const handleConfirmDischarge = async (patientId: string, roomNumber: string, patientName: string) => {
+    try {
+      const res = await fetch("/api/discharge/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patientId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        addToast({
+          type: "success",
+          message: `Discharge clearance certified for ${patientName} (Room ${roomNumber})! Forwarded to Admin Portal.`,
+        });
+        triggerRefresh();
+      } else {
+        addToast({ type: "error", message: data.error || "Failed to confirm discharge" });
+      }
+    } catch {
+      addToast({ type: "error", message: "Network error confirming discharge" });
     }
   };
 
@@ -214,6 +242,7 @@ export default function DoctorDashboardPage() {
           clinicalNote,
           treatmentPlan,
           medication,
+          confirmDischarge: confirmDischargeDuringVisit,
         }),
       });
 
@@ -227,6 +256,7 @@ export default function DoctorDashboardPage() {
         setClinicalNote("");
         setTreatmentPlan("");
         setMedication("");
+        setConfirmDischargeDuringVisit(false);
         triggerRefresh();
       } else {
         addToast({ type: "error", message: resData.error || "Failed to log visit" });
@@ -502,13 +532,25 @@ export default function DoctorDashboardPage() {
                 </div>
 
                 {/* Bottom Actions */}
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center gap-2">
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-700 flex flex-wrap items-center gap-2">
                   <Link
                     href={`/patients/${p.id}`}
                     className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 text-xs font-bold"
                   >
                     View Chart
                   </Link>
+
+                  {/* DIRECT DISCHARGE CONFIRMATION BUTTON FOR 3-DAY CURED PATIENTS */}
+                  {(p.pipeline?.isEligibleForDischarge || (p.pipeline?.streak || 0) >= 3) && (
+                    <button
+                      onClick={() => handleConfirmDischarge(p.id, p.roomNumber, p.name)}
+                      className="btn-touch px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-all"
+                      title="Confirm 3-day fever-free discharge clearance to Admin Portal"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>{p.dischargeConfirmedBy ? "Discharge Certified ✓" : "Confirm Discharge"}</span>
+                    </button>
+                  )}
 
                   {/* STRICT PIPELINE GATING: CANNOT LOG VISIT IF NO TEMP TODAY! */}
                   {hasTemp ? (
@@ -518,6 +560,7 @@ export default function DoctorDashboardPage() {
                         setClinicalNote("");
                         setTreatmentPlan("");
                         setMedication("");
+                        setConfirmDischargeDuringVisit(Boolean(p.pipeline?.isEligibleForDischarge || (p.pipeline?.streak || 0) >= 3));
                       }}
                       className="btn-touch flex-1 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-all"
                     >
@@ -643,6 +686,21 @@ export default function DoctorDashboardPage() {
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs"
                 />
               </div>
+
+              {(selectedPatient.pipeline?.isEligibleForDischarge || (selectedPatient.pipeline?.streak || 0) >= 3) && (
+                <div className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 flex items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    id="confirmDischargeCheck"
+                    checked={confirmDischargeDuringVisit}
+                    onChange={(e) => setConfirmDischargeDuringVisit(e.target.checked)}
+                    className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                  />
+                  <label htmlFor="confirmDischargeCheck" className="text-xs font-bold text-purple-900 dark:text-purple-200 cursor-pointer">
+                    Certify 3-day fever-free recovery & notify Admin Portal for room discharge
+                  </label>
+                </div>
+              )}
 
               <div className="pt-2 border-t flex justify-end gap-2">
                 <button

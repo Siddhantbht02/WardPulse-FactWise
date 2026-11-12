@@ -695,7 +695,7 @@ app.post("/api/readings", async (req: Request, res: Response) => {
 app.post("/api/visits", async (req: Request, res: Response) => {
   try {
     const user = getSessionUser(req);
-    const { patientId, clinicalNote, treatmentPlan, medication } = req.body;
+    const { patientId, clinicalNote, treatmentPlan, medication, confirmDischarge } = req.body;
 
     if (!patientId || !clinicalNote) {
       return res.status(400).json({ error: "Patient ID and clinical assessment note are required" });
@@ -727,6 +727,36 @@ app.post("/api/visits", async (req: Request, res: Response) => {
         medication: medication || null,
       },
     });
+
+    // If doctor confirmed discharge during visit
+    if (confirmDischarge) {
+      const doctorName = user?.name || "Attending Physician";
+      await prisma.patient.update({
+        where: { id: patientId },
+        data: {
+          status: "DISCHARGE_ELIGIBLE",
+          dischargeConfirmedBy: doctorName,
+          dischargeNotes: clinicalNote,
+        },
+      });
+
+      await prisma.dischargeEvent.upsert({
+        where: { id: `event-${patientId}` },
+        update: { eligibleAt: new Date(), confirmedBy: doctorName },
+        create: { id: `event-${patientId}`, patientId, eligibleAt: new Date(), confirmedBy: doctorName },
+      });
+
+      await createNotification({
+        role: "ADMIN",
+        title: "Discharge Confirmed by Doctor",
+        message: `${doctorName} certified discharge clearance. Patient is ready for administrative discharge.`,
+        type: "SUCCESS",
+        link: "/discharge",
+      });
+
+      sseManager.broadcast("DISCHARGE_CONFIRMED", { patientId, doctorName });
+      sseManager.broadcast("PATIENT_UPDATED", { patientId, status: "DISCHARGE_ELIGIBLE", dischargeConfirmedBy: doctorName });
+    }
 
     await createAuditLog({
       userId: user?.id,
@@ -818,6 +848,85 @@ app.delete("/api/claims", async (req: Request, res: Response) => {
     await prisma.nurseClaim.deleteMany({ where: { patientId } });
     sseManager.broadcast("BED_CLAIM_RELEASED", { patientId });
     res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Doctor Discharge Confirmation / Sign-Off
+app.post("/api/discharge/confirm", async (req: Request, res: Response) => {
+  try {
+    const user = getSessionUser(req);
+    const { patientId, notes } = req.body;
+    if (!patientId) return res.status(400).json({ error: "patientId is required" });
+
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId },
+      include: { room: true, readings: true },
+    });
+    if (!patient) return res.status(404).json({ error: "Patient not found" });
+
+    const doctorName = user?.name || "Attending Physician";
+
+    const updated = await prisma.patient.update({
+      where: { id: patientId },
+      data: {
+        status: "DISCHARGE_ELIGIBLE",
+        dischargeConfirmedBy: doctorName,
+        dischargeNotes: notes || patient.dischargeNotes || "Clinical recovery certified by physician.",
+      },
+      include: { room: true },
+    });
+
+    await prisma.dischargeEvent.upsert({
+      where: { id: `event-${patientId}` },
+      update: {
+        eligibleAt: new Date(),
+        confirmedBy: doctorName,
+      },
+      create: {
+        id: `event-${patientId}`,
+        patientId,
+        confirmedBy: doctorName,
+        eligibleAt: new Date(),
+      },
+    });
+
+    await createNotification({
+      role: "ADMIN",
+      title: "Doctor Confirmed Discharge",
+      message: `${doctorName} certified discharge clearance for ${patient.name} (Room ${patient.room?.roomNumber || "Unassigned"}). Ready in Discharge Center.`,
+      type: "SUCCESS",
+      link: "/discharge",
+    });
+
+    await createAuditLog({
+      userId: user?.id,
+      userName: doctorName,
+      role: user?.role || "DOCTOR",
+      action: "CONFIRM_DISCHARGE",
+      entityType: "PATIENT",
+      entityId: patientId,
+      payload: { roomNumber: patient.room?.roomNumber, doctorName },
+    });
+
+    sseManager.broadcast("DISCHARGE_CONFIRMED", {
+      patientId,
+      roomNumber: patient.room?.roomNumber,
+      doctorName,
+    });
+    sseManager.broadcast("PATIENT_UPDATED", {
+      patientId,
+      roomNumber: patient.room?.roomNumber,
+      status: "DISCHARGE_ELIGIBLE",
+      dischargeConfirmedBy: doctorName,
+    });
+
+    res.json({
+      success: true,
+      message: `Discharge certified by ${doctorName}. Admin notified.`,
+      patient: updated,
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

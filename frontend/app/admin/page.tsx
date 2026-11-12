@@ -55,6 +55,7 @@ interface RoomItem {
     todayVisit: boolean;
     claim?: any;
     hasPendingTempRequest: boolean;
+    dischargeConfirmedBy?: string | null;
   } | null;
   pipeline: {
     state: "NEEDS_TEMP" | "READY_FOR_DOCTOR" | "SEEN" | "DISCHARGE_ELIGIBLE" | "DISCHARGED" | "DECEASED";
@@ -117,7 +118,12 @@ export default function AdminDashboardPage() {
         else if (r.pipeline.state === "READY_FOR_DOCTOR") readyForDoctor++;
         else if (r.pipeline.state === "SEEN") seen++;
 
-        if (r.pipeline.state === "DISCHARGE_ELIGIBLE" || r.pipeline.isEligibleForDischarge) {
+        if (
+          r.pipeline.state === "DISCHARGE_ELIGIBLE" ||
+          r.pipeline.isEligibleForDischarge ||
+          r.patient.status === "DISCHARGE_ELIGIBLE" ||
+          Boolean(r.patient.dischargeConfirmedBy)
+        ) {
           dischargeEligible++;
         }
 
@@ -528,7 +534,10 @@ export default function AdminDashboardPage() {
 
             // Occupied Patient Tile
             const isFever = patient.todayTemp && patient.todayTemp >= 38.0;
-            const isDischargeEligible = pipeline?.isEligibleForDischarge || patient.status === "DISCHARGE_ELIGIBLE";
+            const isDischargeEligible =
+              pipeline?.isEligibleForDischarge ||
+              patient.status === "DISCHARGE_ELIGIBLE" ||
+              Boolean(patient.dischargeConfirmedBy);
 
             return (
               <Link
@@ -553,7 +562,7 @@ export default function AdminDashboardPage() {
                   </span>
                   {pipeline && (
                     <PipelineBadge
-                      state={pipeline.state}
+                      state={isDischargeEligible ? "DISCHARGE_ELIGIBLE" : pipeline.state}
                       isOverdueTemp={pipeline.isOverdueTemp}
                       isOverdueDoctor={pipeline.isOverdueDoctor}
                       size="sm"
@@ -589,9 +598,21 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
-                {/* 3-Dot Streak Visualizer */}
-                <div className="pt-1 border-t border-slate-100 dark:border-slate-700/80">
+                {/* 3-Dot Streak Visualizer & Doctor Sign-off Badge */}
+                <div className="pt-1 border-t border-slate-100 dark:border-slate-700/80 flex items-center justify-between gap-1">
                   <StreakDots streak={pipeline?.streak || 0} requiredDays={3} />
+                  {patient.dischargeConfirmedBy ? (
+                    <span
+                      className="text-[9px] font-extrabold text-purple-700 bg-purple-100 dark:bg-purple-950 dark:text-purple-300 px-1.5 py-0.5 rounded-full truncate max-w-[80px]"
+                      title={`Confirmed by ${patient.dischargeConfirmedBy}`}
+                    >
+                      Dr. Signed ✓
+                    </span>
+                  ) : isDischargeEligible ? (
+                    <span className="text-[9px] font-extrabold text-purple-700 bg-purple-100 dark:bg-purple-950 dark:text-purple-300 px-1.5 py-0.5 rounded-full">
+                      Cured 3d
+                    </span>
+                  ) : null}
                 </div>
               </Link>
             );
