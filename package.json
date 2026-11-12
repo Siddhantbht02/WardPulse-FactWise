@@ -1,45 +1,12 @@
 {
-  "name": "wardpulse",
+  "name": "wardpulse-monorepo",
   "version": "1.0.0",
   "private": true,
+  "description": "WardPulse - Virus Quarantine Ward Management & Live Ward Board Monorepo",
   "scripts": {
-    "dev": "tsx server.ts",
-    "build": "prisma generate && prisma db push && next build",
-    "start": "tsx server.ts",
-    "lint": "next lint",
-    "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts",
-    "seed": "tsx prisma/seed.ts",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:e2e": "playwright test"
-  },
-  "dependencies": {
-    "@prisma/client": "^5.22.0",
-    "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
-    "jspdf": "^2.5.2",
-    "jspdf-autotable": "^3.8.4",
-    "lucide-react": "^0.460.0",
-    "next": "^14.2.18",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "recharts": "^2.13.3",
-    "tailwind-merge": "^2.5.4",
-    "zod": "^3.23.8"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.49.0",
-    "@types/node": "^20.17.6",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.49",
-    "prisma": "^5.22.0",
-    "tailwindcss": "^3.4.15",
-    "tsx": "^4.19.2",
-    "typescript": "^5.6.3",
-    "vitest": "^2.1.5"
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:backend": "npm --prefix backend run build",
+    "build:frontend": "npm --prefix frontend run build"
   }
 }
-

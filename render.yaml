@@ -1,21 +1,22 @@
 services:
   - type: web
-    name: wardpulse
+    name: wardpulse-backend
     env: node
     plan: starter
     region: oregon
-    buildCommand: npm run build
+    rootDir: backend
+    buildCommand: npm install && npm run build
     startCommand: npm start
     autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 3000
+        value: 5000
       - key: SESSION_SECRET
         generateValue: true
       - key: KEEP_ALIVE_URL
-        value: https://wardpulse.onrender.com/api/health
+        value: https://wardpulse-backend.onrender.com/api/health
       - key: KEEP_ALIVE_INTERVAL_MS
         value: "300000"
       - key: KEEP_ALIVE_ENABLED
@@ -23,14 +24,4 @@ services:
       - key: DEMO_MODE
         value: "true"
       - key: DATABASE_URL
-        fromDatabase:
-          name: wardpulse-db
-          property: connectionString
-
-databases:
-  - name: wardpulse-db
-    databaseName: wardpulse
-    user: wardpulse
-    plan: starter
-    region: oregon
-
+        value: postgres://37ca9ca15fbd73726e67a185a0fe0ad5556c8c6076be9dd77f4b26b40de8eb6c:sk_vih4gOVH-8iPwsC-8rVf8@db.prisma.io:5432/postgres?sslmode=require
