@@ -1062,6 +1062,79 @@ app.post("/api/waitlist", async (req: Request, res: Response) => {
   }
 });
 
+app.patch("/api/waitlist", async (req: Request, res: Response) => {
+  try {
+    const user = getSessionUser(req);
+    const { action, entryId, targetRoomId } = req.body;
+
+    if (action === "ADMIT") {
+      if (!entryId || !targetRoomId) {
+        return res.status(400).json({ error: "entryId and targetRoomId are required to admit" });
+      }
+
+      const waitlistEntry = await prisma.waitlistEntry.findUnique({ where: { id: entryId } });
+      if (!waitlistEntry) return res.status(404).json({ error: "Waitlist entry not found" });
+
+      const room = await prisma.room.findUnique({ where: { id: parseInt(targetRoomId, 10) } });
+      if (!room) return res.status(404).json({ error: "Room not found" });
+      if (room.status !== "FREE") return res.status(400).json({ error: `Room ${room.roomNumber} is currently ${room.status}` });
+
+      const newPatient = await prisma.$transaction(async (tx) => {
+        const patient = await tx.patient.create({
+          data: {
+            name: waitlistEntry.patientName,
+            age: waitlistEntry.age,
+            sex: waitlistEntry.sex,
+            emergencyContact: waitlistEntry.emergencyContact,
+            contactPhone: waitlistEntry.contactPhone,
+            symptoms: waitlistEntry.symptoms,
+            severity: waitlistEntry.severity,
+            roomId: room.id,
+            status: "ADMITTED",
+          },
+        });
+
+        await tx.room.update({
+          where: { id: room.id },
+          data: { status: "OCCUPIED", cleaningStartedAt: null },
+        });
+
+        await tx.waitlistEntry.update({
+          where: { id: entryId },
+          data: { status: "ADMITTED" },
+        });
+
+        return patient;
+      });
+
+      await createAuditLog({
+        userId: user?.id,
+        userName: user?.name || "System Admin",
+        role: user?.role || "ADMIN",
+        action: "ADMIT_FROM_WAITLIST",
+        entityType: "PATIENT",
+        entityId: newPatient.id,
+        payload: { roomId: room.id, roomNumber: room.roomNumber, waitlistEntryId: entryId },
+      });
+
+      sseManager.broadcast("PATIENT_ADMITTED", { patient: newPatient, roomNumber: room.roomNumber });
+      return res.json({ success: true, patient: newPatient });
+    }
+
+    if (action === "CANCEL") {
+      await prisma.waitlistEntry.update({
+        where: { id: entryId },
+        data: { status: "CANCELLED" },
+      });
+      return res.json({ success: true });
+    }
+
+    res.status(400).json({ error: "Invalid action" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // -------------------------------------------------------------
 // Wilson 95% Confidence Interval Quality Analytics
 // -------------------------------------------------------------

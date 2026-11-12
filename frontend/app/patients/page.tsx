@@ -82,6 +82,8 @@ function PatientListContent() {
 
   // Registration Modal State
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [modalSourceMode, setModalSourceMode] = useState<"new" | "waitlist">("new");
+  const [selectedWaitlistEntryId, setSelectedWaitlistEntryId] = useState("");
   const [registerName, setRegisterName] = useState("");
   const [registerAge, setRegisterAge] = useState("");
   const [registerSex, setRegisterSex] = useState("Male");
@@ -737,172 +739,299 @@ function PatientListContent() {
                 </div>
               </div>
             ) : (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleRegisterPatient(false);
-                }}
-                className="p-5 space-y-4 max-h-[80vh] overflow-y-auto"
-              >
-                {/* Duplicate Warning Prompt */}
-                {duplicateWarning && (
-                  <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs space-y-2">
-                    <p className="font-bold flex items-center gap-1.5">
-                      <AlertTriangle className="w-4 h-4 text-amber-600" />
-                      <span>Duplicate Patient Warning</span>
-                    </p>
-                    <p>{duplicateWarning}</p>
-                    <div className="flex gap-2 justify-end pt-1">
-                      <button
-                        type="button"
-                        onClick={() => handleRegisterPatient(true)}
-                        className="px-3 py-1 rounded bg-amber-600 text-white font-bold text-[11px]"
-                      >
-                        Confirm & Admit Anyway
-                      </button>
-                    </div>
+              <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+                {/* Source Selection Tabs: New Patient Form vs Pick from Waiting List */}
+                <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalSourceMode("new");
+                      setSelectedWaitlistEntryId("");
+                    }}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      modalSourceMode === "new"
+                        ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    Fill New Patient Form
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalSourceMode("waitlist");
+                      if (waitlist.length > 0 && !selectedWaitlistEntryId) {
+                        const first = waitlist[0];
+                        setSelectedWaitlistEntryId(first.id);
+                        setRegisterName(first.patientName);
+                        setRegisterAge(String(first.age));
+                        setRegisterSex(first.sex);
+                        setRegisterEmergencyContact(first.emergencyContact);
+                        setRegisterPhone(first.contactPhone || first.emergencyContact);
+                        setRegisterSeverity(first.severity || "MODERATE");
+                        setRegisterSymptoms(first.symptoms || "");
+                      }
+                    }}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      modalSourceMode === "waitlist"
+                        ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    <span>Pick from Waitlist</span>
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-purple-100 text-purple-700 font-extrabold">
+                      {waitlist.length}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Pick from Waiting List Selector */}
+                {modalSourceMode === "waitlist" && (
+                  <div className="space-y-3 p-3.5 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800">
+                    <label className="block text-xs font-bold text-purple-900 dark:text-purple-200">
+                      Select Waiting List Candidate
+                    </label>
+
+                    {waitlist.length === 0 ? (
+                      <p className="text-xs text-slate-500 py-3 text-center">
+                        No candidates currently waiting on the queue. You can switch to "Fill New Patient Form".
+                      </p>
+                    ) : (
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {waitlist.map((item, idx) => {
+                          const isSelected = selectedWaitlistEntryId === item.id;
+                          return (
+                            <button
+                              type="button"
+                              key={item.id}
+                              onClick={() => {
+                                setSelectedWaitlistEntryId(item.id);
+                                setRegisterName(item.patientName);
+                                setRegisterAge(String(item.age));
+                                setRegisterSex(item.sex);
+                                setRegisterEmergencyContact(item.emergencyContact);
+                                setRegisterPhone(item.contactPhone || item.emergencyContact);
+                                setRegisterSeverity(item.severity || "MODERATE");
+                                setRegisterSymptoms(item.symptoms || "");
+                              }}
+                              className={`w-full text-left p-2.5 rounded-xl border text-xs transition-all flex items-start justify-between gap-2 ${
+                                isSelected
+                                  ? "bg-purple-600 text-white border-purple-600 shadow-xs"
+                                  : "bg-white dark:bg-slate-800 border-purple-200 text-slate-800 dark:text-slate-200 hover:border-purple-400"
+                              }`}
+                            >
+                              <div>
+                                <div className="font-bold flex items-center gap-1.5">
+                                  <span>#{idx + 1} {item.patientName}</span>
+                                  <span
+                                    className={`px-1.5 py-0.2 rounded text-[10px] font-black ${
+                                      isSelected
+                                        ? "bg-purple-800 text-purple-100"
+                                        : "bg-purple-100 text-purple-800"
+                                    }`}
+                                  >
+                                    Priority {item.priority}
+                                  </span>
+                                </div>
+                                <div className={`text-[11px] mt-0.5 ${isSelected ? "text-purple-100" : "text-slate-500"}`}>
+                                  {item.age}y • {item.sex} • {item.severity} • Contact: {item.emergencyContact}
+                                </div>
+                                {item.symptoms && (
+                                  <div className={`text-[10px] mt-0.5 italic ${isSelected ? "text-purple-200" : "text-slate-400"}`}>
+                                    Symptoms: {item.symptoms}
+                                  </div>
+                                )}
+                              </div>
+                              <span className={`text-[10px] font-bold ${isSelected ? "text-purple-200" : "text-purple-600"}`}>
+                                {isSelected ? "Selected ✓" : "Choose"}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Patient Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={registerName}
-                    onChange={(e) => setRegisterName(e.target.value)}
-                    placeholder="e.g. Ramesh Patel"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold"
-                    required
-                  />
-                </div>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (modalSourceMode === "waitlist" && selectedWaitlistEntryId) {
+                      if (!registerRoomId) {
+                        addToast({ type: "error", message: "Please assign an available room." });
+                        return;
+                      }
+                      handleAdmitWaitlistEntry(selectedWaitlistEntryId, parseInt(registerRoomId, 10));
+                      setShowRegisterModal(false);
+                      return;
+                    }
+                    handleRegisterPatient(false);
+                  }}
+                  className="space-y-4"
+                >
+                  {/* Duplicate Warning Prompt */}
+                  {duplicateWarning && (
+                    <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs space-y-2">
+                      <p className="font-bold flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 text-amber-600" />
+                        <span>Duplicate Patient Warning</span>
+                      </p>
+                      <p>{duplicateWarning}</p>
+                      <div className="flex gap-2 justify-end pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleRegisterPatient(true)}
+                          className="px-3 py-1 rounded bg-amber-600 text-white font-bold text-[11px]"
+                        >
+                          Confirm & Admit Anyway
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
-                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Age *</label>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Patient Full Name *
+                    </label>
                     <input
-                      type="number"
-                      min="1"
-                      max="120"
-                      value={registerAge}
-                      onChange={(e) => setRegisterAge(e.target.value)}
-                      placeholder="42"
+                      type="text"
+                      value={registerName}
+                      onChange={(e) => setRegisterName(e.target.value)}
+                      placeholder="e.g. Ramesh Patel"
                       className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold"
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Sex *</label>
-                    <select
-                      value={registerSex}
-                      onChange={(e) => setRegisterSex(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold"
-                    >
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Emergency Contact Name & Relationship *
-                  </label>
-                  <input
-                    type="text"
-                    value={registerEmergencyContact}
-                    onChange={(e) => setRegisterEmergencyContact(e.target.value)}
-                    placeholder="e.g. Sunita Patel (Wife)"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Contact Phone Number
-                  </label>
-                  <input
-                    type="text"
-                    value={registerPhone}
-                    onChange={(e) => setRegisterPhone(e.target.value)}
-                    placeholder="+91 9876543210"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold"
-                  />
-                </div>
-
-                {/* Visual Free Room Selector */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Assign Room (Visual Selector: {freeRooms.length} Available) *
-                  </label>
-                  <div className="grid grid-cols-4 gap-2 max-h-36 overflow-y-auto p-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800">
-                    {freeRooms.map((room) => (
-                      <button
-                        type="button"
-                        key={room.id}
-                        onClick={() => setRegisterRoomId(String(room.id))}
-                        className={`p-2 rounded-lg text-xs font-bold border text-center transition-all ${registerRoomId === String(room.id)
-                            ? "bg-sky-600 text-white border-sky-600 shadow-xs"
-                            : "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-600 hover:border-sky-400"
-                          }`}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Age *</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="120"
+                        value={registerAge}
+                        onChange={(e) => setRegisterAge(e.target.value)}
+                        placeholder="42"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Sex *</label>
+                      <select
+                        value={registerSex}
+                        onChange={(e) => setRegisterSex(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold"
                       >
-                        {room.roomNumber}
-                      </button>
-                    ))}
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
                   </div>
-                  <span className="text-[10px] text-slate-500">Only currently FREE sanitized rooms are displayed</span>
-                </div>
 
-                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Initial Severity
-                    </label>
-                    <select
-                      value={registerSeverity}
-                      onChange={(e) => setRegisterSeverity(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold"
-                    >
-                      <option value="MILD">MILD</option>
-                      <option value="MODERATE">MODERATE</option>
-                      <option value="SEVERE">SEVERE</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Initial Symptoms
+                      Emergency Contact Name & Relationship *
                     </label>
                     <input
                       type="text"
-                      value={registerSymptoms}
-                      onChange={(e) => setRegisterSymptoms(e.target.value)}
-                      placeholder="e.g. High fever, dry cough"
+                      value={registerEmergencyContact}
+                      onChange={(e) => setRegisterEmergencyContact(e.target.value)}
+                      placeholder="e.g. Sunita Patel (Wife)"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Contact Phone Number
+                    </label>
+                    <input
+                      type="text"
+                      value={registerPhone}
+                      onChange={(e) => setRegisterPhone(e.target.value)}
+                      placeholder="+91 9876543210"
                       className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold"
                     />
                   </div>
-                </div>
 
-                <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowRegisterModal(false)}
-                    className="px-4 py-2 rounded-xl border text-xs font-bold"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={registering}
-                    className="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow flex items-center gap-1.5 disabled:opacity-50"
-                  >
-                    {registering && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                    <span>Admit to Room</span>
-                  </button>
-                </div>
-              </form>
+                  {/* Visual Free Room Selector */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Assign Room (Visual Selector: {freeRooms.length} Available) *
+                    </label>
+                    <div className="grid grid-cols-4 gap-2 max-h-36 overflow-y-auto p-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800">
+                      {freeRooms.map((room) => (
+                        <button
+                          type="button"
+                          key={room.id}
+                          onClick={() => setRegisterRoomId(String(room.id))}
+                          className={`p-2 rounded-lg text-xs font-bold border text-center transition-all ${
+                            registerRoomId === String(room.id)
+                              ? "bg-sky-600 text-white border-sky-600 shadow-xs"
+                              : "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-600 hover:border-sky-400"
+                          }`}
+                        >
+                          {room.roomNumber}
+                        </button>
+                      ))}
+                    </div>
+                    <span className="text-[10px] text-slate-500">Only currently FREE sanitized rooms are displayed</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Initial Severity
+                      </label>
+                      <select
+                        value={registerSeverity}
+                        onChange={(e) => setRegisterSeverity(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold"
+                      >
+                        <option value="MILD">MILD</option>
+                        <option value="MODERATE">MODERATE</option>
+                        <option value="SEVERE">SEVERE</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Initial Symptoms
+                      </label>
+                      <input
+                        type="text"
+                        value={registerSymptoms}
+                        onChange={(e) => setRegisterSymptoms(e.target.value)}
+                        placeholder="e.g. High fever, dry cough"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowRegisterModal(false)}
+                      className="px-4 py-2 rounded-xl border text-xs font-bold"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={registering}
+                      className="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      {registering && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                      <span>
+                        {modalSourceMode === "waitlist" ? "Admit Waitlist Patient to Room" : "Admit to Room"}
+                      </span>
+                    </button>
+                  </div>
+                </form>
+              </div>
             )}
           </div>
         </div>
