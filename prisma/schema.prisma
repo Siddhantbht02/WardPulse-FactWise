@@ -1,0 +1,202 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  role      String   // ADMIN, NURSE, DOCTOR
+  pin       String   // 4-digit PIN
+  avatar    String?
+  isDemo    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  readings       TemperatureReading[]
+  visits         DoctorVisit[]
+  claims         NurseClaim[]
+  tempRequests   TempRequest[]
+  notifications  Notification[]
+  auditLogs      AuditLog[]
+}
+
+model Room {
+  id          Int      @id // 1 to 74
+  roomNumber  String   @unique
+  section     String   // A, B, C, D, E
+  status      String   @default("FREE") // FREE, OCCUPIED, CLEANING
+  cleaningStartedAt DateTime?
+  
+  patient     Patient? @relation("RoomCurrentPatient")
+}
+
+model Patient {
+  id                String    @id @default(cuid())
+  name              String
+  age               Int
+  sex               String    // Male, Female, Other
+  emergencyContact  String
+  contactPhone      String
+  symptoms          String?
+  severity          String    @default("MODERATE") // MILD, MODERATE, SEVERE
+  status            String    @default("ADMITTED") // ADMITTED, UNDER_TREATMENT, DISCHARGE_ELIGIBLE, DISCHARGED, DECEASED
+  
+  roomId            Int?      @unique
+  room              Room?     @relation("RoomCurrentPatient", fields: [roomId], references: [id])
+  
+  admittedAt        DateTime  @default(now())
+  dischargedAt      DateTime?
+  deceasedAt        DateTime?
+  dischargeConfirmedBy String?
+  dischargeCompletedBy String?
+  dischargeNotes    String?
+  deceasedCause     String?
+
+  readings          TemperatureReading[]
+  visits            DoctorVisit[]
+  claim             NurseClaim?
+  tempRequests      TempRequest[]
+  dischargeEvents   DischargeEvent[]
+}
+
+model TemperatureReading {
+  id             String   @id @default(cuid())
+  patientId      String
+  patient        Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  valueC         Float
+  recordedAt     DateTime @default(now())
+  recordedById   String
+  recordedBy     User     @relation(fields: [recordedById], references: [id])
+  isRemeasure    Boolean  @default(false)
+  reason         String?
+  localDate      String   // YYYY-MM-DD
+  idempotencyKey String?  @unique
+
+  @@index([patientId, localDate])
+  @@index([localDate])
+}
+
+model DoctorVisit {
+  id            String   @id @default(cuid())
+  patientId     String
+  patient       Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId      String
+  doctor        User     @relation(fields: [doctorId], references: [id])
+  visitedAt     DateTime @default(now())
+  localDate     String   // YYYY-MM-DD
+  clinicalNote  String
+  treatmentPlan String?
+  medication    String?
+
+  @@index([patientId, localDate])
+}
+
+model NurseClaim {
+  id         String   @id @default(cuid())
+  patientId  String   @unique
+  patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  nurseId    String
+  nurse      User     @relation(fields: [nurseId], references: [id])
+  claimedAt  DateTime @default(now())
+  expiresAt  DateTime
+
+  @@index([expiresAt])
+}
+
+model TempRequest {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId    String
+  doctor      User     @relation(fields: [doctorId], references: [id])
+  requestedAt DateTime @default(now())
+  status      String   @default("PENDING") // PENDING, FULFILLED
+  priority    String   @default("URGENT")  // URGENT, NORMAL
+
+  @@index([patientId, status])
+}
+
+model WaitlistEntry {
+  id               String   @id @default(cuid())
+  patientName      String
+  age              Int
+  sex              String
+  emergencyContact String
+  contactPhone     String
+  symptoms         String?
+  severity         String   @default("MODERATE")
+  priority         Int      @default(1) // 1 highest
+  addedAt          DateTime @default(now())
+  status           String   @default("WAITING") // WAITING, ADMITTED, CANCELLED
+
+  @@index([status, priority])
+}
+
+model DischargeEvent {
+  id           String    @id @default(cuid())
+  patientId    String
+  patient      Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  eligibleAt   DateTime  @default(now())
+  confirmedBy  String?
+  completedBy  String?
+  completedAt  DateTime?
+  summaryJson  String?   // Proof dates & max temps
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String?  // ALL, ADMIN, NURSE, DOCTOR
+  title     String
+  message   String
+  type      String   @default("INFO") // INFO, WARNING, ALERT, SUCCESS
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([role, isRead])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userName   String
+  role       String
+  action     String
+  entityType String
+  entityId   String?
+  payload    String?
+  timestamp  DateTime @default(now())
+
+  @@index([timestamp])
+}
+
+model HeartbeatLog {
+  id             String   @id @default(cuid())
+  status         String   // OK, FAIL
+  responseTimeMs Int
+  timestamp      DateTime @default(now())
+  details        String?
+
+  @@index([timestamp])
+}
+
+model FacilitySettings {
+  id                   String   @id @default("default")
+  feverThreshold       Float    @default(38.0)
+  requiredFeverFreeDays Int     @default(3)
+  benchmarkMortality   Float    @default(0.15)
+  timezone             String   @default("Asia/Kolkata")
+  tempCutoffHour       Int      @default(12)
+  doctorCutoffHour     Int      @default(17)
+  demoMode             Boolean  @default(true)
+  updatedAt            DateTime @updatedAt
+}
+
