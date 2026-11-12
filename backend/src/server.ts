@@ -69,20 +69,110 @@ app.get("/api/events", (req: Request, res: Response) => {
 });
 
 // -------------------------------------------------------------
-// System Health
+// System Health & Heartbeat Status
 // -------------------------------------------------------------
-app.get("/api/health", async (req: Request, res: Response) => {
+app.get(["/api/health", "/api/system/health"], async (req: Request, res: Response) => {
+  const start = Date.now();
   try {
     await prisma.$queryRaw`SELECT 1`;
+    const responseTimeMs = Date.now() - start;
     res.json({
       status: "ok",
       uptimeSeconds: Math.floor((Date.now() - startTime) / 1000),
       timestamp: new Date().toISOString(),
       db: "ok",
+      dbStatus: "OK",
+      responseTimeMs,
       version: "1.0.0",
     });
   } catch (err: any) {
-    res.status(500).json({ status: "error", error: err.message, db: "fail" });
+    res.status(500).json({ status: "error", error: err.message, db: "fail", dbStatus: "FAIL" });
+  }
+});
+
+// Full System Status & Heartbeat History
+app.get("/api/system/status", async (req: Request, res: Response) => {
+  const start = Date.now();
+  let dbStatus = "OK";
+  let responseTimeMs = 0;
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    responseTimeMs = Date.now() - start;
+  } catch {
+    dbStatus = "FAIL";
+    responseTimeMs = Date.now() - start;
+  }
+
+  try {
+    const heartbeats = await prisma.heartbeatLog.findMany({
+      orderBy: { timestamp: "desc" },
+      take: 50,
+    });
+
+    res.json({
+      status: dbStatus === "OK" ? "ok" : "error",
+      dbStatus,
+      uptimeSeconds: Math.floor((Date.now() - startTime) / 1000),
+      responseTimeMs,
+      timestamp: new Date().toISOString(),
+      heartbeats,
+      scheduler: {
+        active: true,
+        intervalMinutes: 5,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      status: "error",
+      error: err.message,
+      dbStatus: "FAIL",
+      uptimeSeconds: Math.floor((Date.now() - startTime) / 1000),
+      heartbeats: [],
+    });
+  }
+});
+
+// Trigger Manual / On-Demand Health Check
+app.post(["/api/system/status", "/api/system/health", "/api/health"], async (req: Request, res: Response) => {
+  const start = Date.now();
+  let status = "OK";
+  let details = "Manual health check triggered via dashboard";
+  let responseTimeMs = 0;
+
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    responseTimeMs = Date.now() - start;
+  } catch (err: any) {
+    status = "FAIL";
+    details = err.message || "Database connection error";
+    responseTimeMs = Date.now() - start;
+  }
+
+  try {
+    const log = await prisma.heartbeatLog.create({
+      data: {
+        status,
+        responseTimeMs,
+        details,
+      },
+    });
+
+    res.json({
+      success: status === "OK",
+      status: status.toLowerCase(),
+      heartbeat: log,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      heartbeat: {
+        status,
+        responseTimeMs,
+        details,
+        timestamp: new Date().toISOString(),
+      },
+    });
   }
 });
 

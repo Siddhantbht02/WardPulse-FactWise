@@ -119,9 +119,8 @@ export function Navbar() {
             {/* Live SSE status indicator */}
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] text-slate-600 dark:text-slate-300">
               <span
-                className={`w-2 h-2 rounded-full ${
-                  sseConnected ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
-                }`}
+                className={`w-2 h-2 rounded-full ${sseConnected ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                  }`}
               />
               <span className="hidden md:inline">{sseConnected ? "Live Sync" : "Connecting..."}</span>
             </div>
@@ -134,33 +133,29 @@ export function Navbar() {
                 <>
                   <Link
                     href="/admin"
-                    className={`px-3 py-1.5 rounded-lg transition-colors ${
-                      pathname === "/admin" ? "bg-sky-50 text-sky-700 font-semibold dark:bg-sky-950 dark:text-sky-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg transition-colors ${pathname === "/admin" ? "bg-sky-50 text-sky-700 font-semibold dark:bg-sky-950 dark:text-sky-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                      }`}
                   >
                     Ward Board
                   </Link>
                   <Link
                     href="/patients"
-                    className={`px-3 py-1.5 rounded-lg transition-colors ${
-                      pathname.startsWith("/patients") ? "bg-sky-50 text-sky-700 font-semibold dark:bg-sky-950 dark:text-sky-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg transition-colors ${pathname.startsWith("/patients") ? "bg-sky-50 text-sky-700 font-semibold dark:bg-sky-950 dark:text-sky-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                      }`}
                   >
                     Patients & Waitlist
                   </Link>
                   <Link
                     href="/discharge"
-                    className={`px-3 py-1.5 rounded-lg transition-colors ${
-                      pathname.startsWith("/discharge") ? "bg-sky-50 text-sky-700 font-semibold dark:bg-sky-950 dark:text-sky-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg transition-colors ${pathname.startsWith("/discharge") ? "bg-sky-50 text-sky-700 font-semibold dark:bg-sky-950 dark:text-sky-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                      }`}
                   >
                     Discharge & Analytics
                   </Link>
                   <Link
                     href="/system"
-                    className={`px-3 py-1.5 rounded-lg transition-colors ${
-                      pathname === "/system" ? "bg-sky-50 text-sky-700 font-semibold dark:bg-sky-950 dark:text-sky-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg transition-colors ${pathname === "/system" ? "bg-sky-50 text-sky-700 font-semibold dark:bg-sky-950 dark:text-sky-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                      }`}
                   >
                     System Status
                   </Link>
@@ -171,17 +166,15 @@ export function Navbar() {
                 <>
                   <Link
                     href="/nurse"
-                    className={`px-3 py-1.5 rounded-lg transition-colors ${
-                      pathname === "/nurse" ? "bg-sky-50 text-sky-700 font-semibold dark:bg-sky-950 dark:text-sky-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg transition-colors ${pathname === "/nurse" ? "bg-sky-50 text-sky-700 font-semibold dark:bg-sky-950 dark:text-sky-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                      }`}
                   >
                     Temperature Triage
                   </Link>
                   <Link
                     href="/patients"
-                    className={`px-3 py-1.5 rounded-lg transition-colors ${
-                      pathname.startsWith("/patients") ? "bg-sky-50 text-sky-700 font-semibold dark:bg-sky-950 dark:text-sky-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg transition-colors ${pathname.startsWith("/patients") ? "bg-sky-50 text-sky-700 font-semibold dark:bg-sky-950 dark:text-sky-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                      }`}
                   >
                     Patient Directory
                   </Link>
@@ -192,25 +185,22 @@ export function Navbar() {
                 <>
                   <Link
                     href="/doctor"
-                    className={`px-3 py-1.5 rounded-lg transition-colors ${
-                      pathname === "/doctor" ? "bg-sky-50 text-sky-700 font-semibold dark:bg-sky-950 dark:text-sky-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg transition-colors ${pathname === "/doctor" ? "bg-sky-50 text-sky-700 font-semibold dark:bg-sky-950 dark:text-sky-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                      }`}
                   >
                     Clinical Rounds
                   </Link>
                   <Link
                     href="/patients"
-                    className={`px-3 py-1.5 rounded-lg transition-colors ${
-                      pathname.startsWith("/patients") ? "bg-sky-50 text-sky-700 font-semibold dark:bg-sky-950 dark:text-sky-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg transition-colors ${pathname.startsWith("/patients") ? "bg-sky-50 text-sky-700 font-semibold dark:bg-sky-950 dark:text-sky-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                      }`}
                   >
                     Patient Directory
                   </Link>
                   <Link
                     href="/discharge"
-                    className={`px-3 py-1.5 rounded-lg transition-colors ${
-                      pathname.startsWith("/discharge") ? "bg-sky-50 text-sky-700 font-semibold dark:bg-sky-950 dark:text-sky-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg transition-colors ${pathname.startsWith("/discharge") ? "bg-sky-50 text-sky-700 font-semibold dark:bg-sky-950 dark:text-sky-300" : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                      }`}
                   >
                     Discharge Queue
                   </Link>
@@ -252,11 +242,10 @@ export function Navbar() {
               onClick={() => setHighContrast((prev) => !prev)}
               aria-label={highContrast ? "Disable high contrast mode" : "Enable high contrast mode (WCAG AA)"}
               title={highContrast ? "High Contrast Mode Active" : "Toggle High Contrast Mode (WCAG AA)"}
-              className={`p-2 rounded-lg transition-colors focus:outline-hidden focus:ring-2 focus:ring-sky-500 ${
-                highContrast
+              className={`p-2 rounded-lg transition-colors focus:outline-hidden focus:ring-2 focus:ring-sky-500 ${highContrast
                   ? "bg-black text-white ring-2 ring-white"
                   : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-              }`}
+                }`}
             >
               <Contrast className="w-5 h-5" />
             </button>

@@ -19,12 +19,22 @@ export default function SystemStatusPage() {
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
 
-  const fetchStatus = () => {
+  const fetchStatus = async () => {
     setLoading(true);
-    fetch("/api/system/status")
-      .then((r) => r.json())
-      .then((res) => setData(res))
-      .finally(() => setLoading(false));
+    try {
+      let res = await fetch("/api/system/status");
+      if (!res.ok) {
+        res = await fetch("/api/health");
+      }
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+      }
+    } catch (err) {
+      console.error("Status fetch error", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -36,16 +46,20 @@ export default function SystemStatusPage() {
   const handleRunHealthCheck = async () => {
     setChecking(true);
     try {
-      const res = await fetch("/api/system/status", { method: "POST" });
+      let res = await fetch("/api/system/status", { method: "POST" });
+      if (!res.ok) {
+        res = await fetch("/api/health", { method: "POST" });
+      }
       const resData = await res.json();
       if (res.ok) {
+        const ms = resData?.heartbeat?.responseTimeMs ?? resData?.responseTimeMs ?? 15;
         addToast({
           type: "success",
-          message: `Health check passed! Latency: ${resData.heartbeat.responseTimeMs}ms.`,
+          message: `Health check passed! Latency: ${ms}ms.`,
         });
         fetchStatus();
       } else {
-        addToast({ type: "error", message: "Health check query failed" });
+        addToast({ type: "error", message: resData?.error || "Health check query failed" });
       }
     } catch {
       addToast({ type: "error", message: "Network error during health check" });
