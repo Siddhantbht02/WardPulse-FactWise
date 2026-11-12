@@ -426,22 +426,41 @@ export default function DischargeAnalyticsPage() {
                         <span>Nudge Doctor</span>
                       </button>
 
-                      {user?.role === "DOCTOR" && (
-                        <button
-                          onClick={async () => {
-                            await fetch("/api/discharge/confirm", {
+                      <button
+                        onClick={async () => {
+                          try {
+                            const res = await fetch("/api/discharge/confirm", {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
                               body: JSON.stringify({ patientId: p.id }),
                             });
-                            addToast({ type: "success", message: "Discharge confirmed!" });
-                            triggerRefresh();
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-purple-600 text-white text-[11px] font-bold shadow-xs hover:bg-purple-700"
-                        >
-                          Sign-Off Now
-                        </button>
-                      )}
+                            const data = await res.json();
+                            if (res.ok) {
+                              addToast({
+                                type: "success",
+                                message: `Discharge certified for ${p.name}! Card moved to Ready to Discharge.`,
+                              });
+                              // Move immediately in local state for zero-latency UX
+                              setLaneAwaiting((prev) => prev.filter((item) => item.id !== p.id));
+                              setLaneReady((prev) => [
+                                {
+                                  ...p,
+                                  dischargeConfirmedBy: data.patient?.dischargeConfirmedBy || user?.name || "Dr. Sign-Off",
+                                },
+                                ...prev,
+                              ]);
+                              triggerRefresh();
+                            } else {
+                              addToast({ type: "error", message: data.error || "Failed to sign off discharge" });
+                            }
+                          } catch {
+                            addToast({ type: "error", message: "Network error signing off discharge" });
+                          }
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-purple-600 text-white text-[11px] font-bold shadow-xs hover:bg-purple-700 active:scale-95 transition-all"
+                      >
+                        Sign-Off Now
+                      </button>
                     </div>
                   </div>
                 ))

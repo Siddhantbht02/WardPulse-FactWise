@@ -44,6 +44,8 @@ interface PatientItem {
   latestTemp: number | null;
   todayTemp: number | null;
   todayVisit: boolean;
+  dischargeConfirmedBy?: string | null;
+  dischargeNotes?: string | null;
   pipeline?: any;
 }
 
@@ -444,14 +446,21 @@ function PatientListContent() {
                             </span>
                           </td>
                           <td className="py-3 px-4">
-                            {p.pipeline && (
-                              <PipelineBadge
-                                state={p.pipeline.state}
-                                isOverdueTemp={p.pipeline.isOverdueTemp}
-                                isOverdueDoctor={p.pipeline.isOverdueDoctor}
-                                size="sm"
-                              />
-                            )}
+                            <div className="space-y-1">
+                              {p.pipeline && (
+                                <PipelineBadge
+                                  state={p.pipeline.state}
+                                  isOverdueTemp={p.pipeline.isOverdueTemp}
+                                  isOverdueDoctor={p.pipeline.isOverdueDoctor}
+                                  size="sm"
+                                />
+                              )}
+                              {p.dischargeConfirmedBy && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                  ✓ Signed: {p.dischargeConfirmedBy.replace("Dr. ", "")}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-3 px-4 font-mono font-bold">
                             {p.todayTemp ? (

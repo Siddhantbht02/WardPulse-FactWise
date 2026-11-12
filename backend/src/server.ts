@@ -371,6 +371,8 @@ app.get("/api/patients", async (req: Request, res: Response) => {
           admittedAt: patient.admittedAt.toISOString(),
           roomId: room.id,
           roomNumber: room.roomNumber,
+          dischargeConfirmedBy: patient.dischargeConfirmedBy,
+          dischargeNotes: patient.dischargeNotes,
           latestTemp: patient.readings[0]?.valueC ?? null,
           latestTempTime: patient.readings[0]?.recordedAt?.toISOString() ?? null,
           todayTemp: latestReadingToday?.valueC ?? null,
