@@ -1196,6 +1196,135 @@ app.patch("/api/notifications", async (req: Request, res: Response) => {
 });
 
 // -------------------------------------------------------------
+// Demo Simulation & Reset Engine
+// -------------------------------------------------------------
+app.post("/api/demo/simulate-day", async (req: Request, res: Response) => {
+  try {
+    const settings = await prisma.facilitySettings.findUnique({ where: { id: "default" } });
+    const threshold = settings?.feverThreshold ?? 38.0;
+    const timezone = settings?.timezone ?? "Asia/Kolkata";
+    const currentTodayStr = getFacilityLocalDate(new Date(), timezone);
+
+    // Shift all historical readings, visits, and admittedAt back by 1 day
+    // This allows "today" to become empty (new day starts) while past days retain their records
+    const oneDayMs = 24 * 60 * 60 * 1000;
+
+    const readings = await prisma.temperatureReading.findMany();
+    for (const r of readings) {
+      const recordedAt = new Date(r.recordedAt.getTime() - oneDayMs);
+      const parts = r.localDate.split("-").map(Number);
+      const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+      d.setUTCDate(d.getUTCDate() - 1);
+      const newLocalDate = d.toISOString().slice(0, 10);
+      await prisma.temperatureReading.update({
+        where: { id: r.id },
+        data: {
+          recordedAt,
+          localDate: newLocalDate,
+          idempotencyKey: null,
+        },
+      });
+    }
+
+    const visits = await prisma.doctorVisit.findMany();
+    for (const v of visits) {
+      const visitedAt = new Date(v.visitedAt.getTime() - oneDayMs);
+      const parts = v.localDate.split("-").map(Number);
+      const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+      d.setUTCDate(d.getUTCDate() - 1);
+      const newLocalDate = d.toISOString().slice(0, 10);
+      await prisma.doctorVisit.update({
+        where: { id: v.id },
+        data: {
+          visitedAt,
+          localDate: newLocalDate,
+        },
+      });
+    }
+
+    // Shift admittedAt for all active patients
+    const patients = await prisma.patient.findMany({
+      where: { status: { in: ["ADMITTED", "UNDER_TREATMENT", "DISCHARGE_ELIGIBLE"] } },
+    });
+    for (const p of patients) {
+      await prisma.patient.update({
+        where: { id: p.id },
+        data: {
+          admittedAt: new Date(p.admittedAt.getTime() - oneDayMs),
+        },
+      });
+    }
+
+    // Clean active claims & requests
+    await prisma.nurseClaim.deleteMany();
+    await prisma.tempRequest.deleteMany();
+
+    // Check newly eligible patients whose 3 fever-free days just matured
+    const updatedPatients = await prisma.patient.findMany({
+      where: { status: { in: ["ADMITTED", "UNDER_TREATMENT"] } },
+      include: { readings: { orderBy: { recordedAt: "desc" } } },
+    });
+
+    let newEligibleCount = 0;
+    for (const p of updatedPatients) {
+      const { streak } = calculateStreak(p.readings, threshold, currentTodayStr);
+      if (streak >= 3 && p.status !== "DISCHARGE_ELIGIBLE") {
+        newEligibleCount++;
+        await prisma.patient.update({
+          where: { id: p.id },
+          data: { status: "DISCHARGE_ELIGIBLE" },
+        });
+        await prisma.dischargeEvent.upsert({
+          where: { id: `event-${p.id}` },
+          update: { eligibleAt: new Date() },
+          create: { id: `event-${p.id}`, patientId: p.id, eligibleAt: new Date() },
+        });
+      }
+    }
+
+    await createNotification({
+      role: "ALL",
+      title: "New Day Cycle Started",
+      message: `Facility simulation advanced 24 hours. Today's temperature worklists have reset. ${newEligibleCount} new patients eligible for discharge.`,
+      type: "INFO",
+      link: "/admin",
+    });
+
+    sseManager.broadcast("DAY_SIMULATED", {
+      date: currentTodayStr,
+      newEligibleCount,
+    });
+
+    res.json({
+      success: true,
+      message: `Day advanced 24 hours! Today's worklists reset and streaks progressed (${newEligibleCount} new discharge eligible).`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/demo/reset", async (req: Request, res: Response) => {
+  try {
+    const { exec } = await import("child_process");
+    exec("npx prisma db seed", (err, stdout, stderr) => {
+      if (err) {
+        console.error("Reset error:", stderr);
+      } else {
+        console.log("Reset stdout:", stdout);
+      }
+    });
+
+    res.json({
+      success: true,
+      message: "Facility database reset triggered. Returning to default state in seconds.",
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------------------------------------------------
 // Autonomous Background Schedulers
 // -------------------------------------------------------------
 // 1. 5-Minute Health Heartbeat
