@@ -97,8 +97,9 @@ No signups required. The landing page includes **1-Tap Quick Demo Login buttons*
 | Role | Staff Name | Duty | PIN | Dashboard Route |
 |------|------------|------|-----|-----------------|
 | **ADMIN** | Dr. Sarah Chen | Chief Medical Administrator | `1111` | `/admin` |
-| **DOCTOR** | Dr. Vikram Patel | Infectious Disease Specialist | `3333` | `/doctor` |
-| **NURSE** | Nurse Anita Roy | Lead Quarantine Nurse | `2222` | `/nurse` |
+| **DOCTOR** | Dr. Ananya Iyer | Infectious Disease Specialist | `2244` | `/doctor` |
+| **DOCTOR (Alt)** | Dr. Priya Sharma | Attending Physician | `2222` | `/doctor` |
+| **NURSE** | Anita Patel | Lead Quarantine Triage Nurse | `3333` | `/nurse` |
 
 ---
 

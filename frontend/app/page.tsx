@@ -48,7 +48,10 @@ export default function LoginPage() {
           setStaffList(data.staff);
           // Auto-select first staff of current role
           const defaultStaff = data.staff.find((s: StaffMember) => s.role === "ADMIN");
-          if (defaultStaff) setSelectedUser(defaultStaff);
+          if (defaultStaff) {
+            setSelectedUser(defaultStaff);
+            setPin(defaultStaff.pin);
+          }
         }
       });
   }, []);
@@ -56,10 +59,17 @@ export default function LoginPage() {
   // Update selected user when role changes
   const handleRoleSelect = (role: "ADMIN" | "NURSE" | "DOCTOR") => {
     setSelectedRole(role);
-    setPin("");
     setErrorMsg("");
-    const matching = staffList.find((s) => s.role === role);
-    if (matching) setSelectedUser(matching);
+    let matching: StaffMember | undefined;
+    if (role === "DOCTOR") {
+      matching = staffList.find((s) => s.id === "u-doc-3" || s.name.includes("Ananya")) || staffList.find((s) => s.role === "DOCTOR");
+    } else {
+      matching = staffList.find((s) => s.role === role);
+    }
+    if (matching) {
+      setSelectedUser(matching);
+      setPin(matching.pin);
+    }
   };
 
   // Lockout countdown timer
@@ -121,14 +131,30 @@ export default function LoginPage() {
   };
 
   // 1-Tap Quick Demo Login (for Instant Reviewer Access)
-  const handleQuickDemoLogin = (role: "ADMIN" | "NURSE" | "DOCTOR") => {
-    const fallbackMap = {
-      ADMIN: { id: "u-admin-1", name: "Dr. Sarah Chen", role: "ADMIN" as const, pin: "1111", isDemo: true },
-      NURSE: { id: "u-nurse-1", name: "Anita Patel", role: "NURSE" as const, pin: "3333", isDemo: true },
-      DOCTOR: { id: "u-doc-1", name: "Dr. Priya Sharma", role: "DOCTOR" as const, pin: "2222", isDemo: true },
-    };
+  const handleQuickDemoLogin = (role: "ADMIN" | "NURSE" | "DOCTOR", targetStaffId?: string) => {
+    let demoStaff: StaffMember | undefined;
+    if (targetStaffId) {
+      demoStaff = staffList.find((s) => s.id === targetStaffId);
+    }
+    if (!demoStaff) {
+      if (role === "DOCTOR") {
+        demoStaff = staffList.find((s) => s.id === "u-doc-3" || s.name.includes("Ananya")) || staffList.find((s) => s.role === "DOCTOR");
+      } else if (role === "NURSE") {
+        demoStaff = staffList.find((s) => s.id === "u-nurse-1" || s.name.includes("Anita")) || staffList.find((s) => s.role === "NURSE");
+      } else {
+        demoStaff = staffList.find((s) => s.id === "u-admin-1" || s.name.includes("Sarah")) || staffList.find((s) => s.role === "ADMIN");
+      }
+    }
 
-    const demoStaff = staffList.find((s) => s.role === role) || fallbackMap[role];
+    if (!demoStaff) {
+      const fallbackMap = {
+        ADMIN: { id: "u-admin-1", name: "Dr. Sarah Chen", role: "ADMIN" as const, pin: "1111", isDemo: true },
+        NURSE: { id: "u-nurse-1", name: "Anita Patel", role: "NURSE" as const, pin: "3333", isDemo: true },
+        DOCTOR: { id: "u-doc-3", name: "Dr. Ananya Iyer", role: "DOCTOR" as const, pin: "2244", isDemo: true },
+      };
+      demoStaff = fallbackMap[role];
+    }
+
     if (demoStaff) {
       setSelectedRole(role);
       setSelectedUser(demoStaff);
@@ -199,7 +225,7 @@ export default function LoginPage() {
           </button>
 
           <button
-            onClick={() => handleQuickDemoLogin("DOCTOR")}
+            onClick={() => handleQuickDemoLogin("DOCTOR", "u-doc-3")}
             disabled={loading}
             className="flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-slate-800 border-2 border-sky-200 hover:border-sky-500 shadow-xs hover:shadow-md transition-all text-left group"
           >
@@ -207,8 +233,8 @@ export default function LoginPage() {
               <span className="text-[10px] font-bold uppercase tracking-wider text-sky-700 bg-sky-100 dark:bg-sky-950 px-2 py-0.5 rounded-full">
                 DOCTOR
               </span>
-              <p className="text-base font-bold text-slate-900 dark:text-white mt-1.5">Dr. Priya Sharma</p>
-              <p className="text-xs text-slate-500">PIN: 2222 • Clinical Rounds</p>
+              <p className="text-base font-bold text-slate-900 dark:text-white mt-1.5">Dr. Ananya Iyer</p>
+              <p className="text-xs text-slate-500">PIN: 2244 • Clinical Rounds</p>
             </div>
             <ArrowRight className="w-5 h-5 text-sky-600 group-hover:translate-x-1 transition-transform" />
           </button>
@@ -276,16 +302,16 @@ export default function LoginPage() {
             </div>
             <div className="space-y-2.5">
               {filteredStaff.map((staff) => (
-                <button
+                <div
                   key={staff.id}
                   onClick={() => {
                     setSelectedUser(staff);
-                    setPin("");
+                    setPin(staff.pin);
                     setErrorMsg("");
                   }}
-                  className={`w-full p-3.5 rounded-2xl border text-left flex items-center justify-between transition-all ${
+                  className={`w-full p-3.5 rounded-2xl border text-left flex items-center justify-between transition-all cursor-pointer ${
                     selectedUser?.id === staff.id
-                      ? "border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 shadow-xs"
+                      ? "border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 shadow-xs ring-1 ring-sky-500/30"
                       : "border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-750"
                   }`}
                 >
@@ -302,8 +328,21 @@ export default function LoginPage() {
                     <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
                       PIN: {staff.pin}
                     </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedUser(staff);
+                        setPin(staff.pin);
+                        handleLoginSubmit(staff.pin, staff);
+                      }}
+                      className="px-3 py-1 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-xs transition-colors flex items-center gap-1"
+                    >
+                      <span>Sign In</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           </div>
