@@ -5,12 +5,16 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatTemp(tempC: number, unit: "C" | "F" = "C"): string {
+export function formatTemp(tempC?: number | null, unit: "C" | "F" = "C"): string {
+  if (tempC === null || tempC === undefined || isNaN(Number(tempC))) {
+    return unit === "F" ? "--.-°F" : "--.-°C";
+  }
+  const val = Number(tempC);
   if (unit === "F") {
-    const tempF = (tempC * 9) / 5 + 32;
+    const tempF = (val * 9) / 5 + 32;
     return `${tempF.toFixed(1)}°F`;
   }
-  return `${tempC.toFixed(1)}°C`;
+  return `${val.toFixed(1)}°C`;
 }
 
 export function getFeverStatus(tempC: number, threshold = 38.0): {

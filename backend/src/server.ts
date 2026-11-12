@@ -414,12 +414,76 @@ app.get("/api/patients/:id", async (req: Request, res: Response) => {
       todayStr,
     });
 
+    const timeline: any[] = [];
+    if (patient.admittedAt) {
+      timeline.push({
+        id: `adm-${patient.id}`,
+        type: "ADMISSION",
+        timestamp: patient.admittedAt,
+        title: "Patient Admitted to Quarantine Facility",
+        description: `Admitted to Room ${patient.room?.roomNumber || "Unassigned"}. Initial triage severity: ${patient.severity}. Symptoms: ${patient.symptoms || "None specified"}.`,
+        actor: "Admissions Admin",
+      });
+    }
+
+    patient.readings.forEach((r) => {
+      const isFever = r.valueC >= threshold;
+      timeline.push({
+        id: `read-${r.id}`,
+        type: "TEMPERATURE",
+        timestamp: r.recordedAt,
+        title: `Temperature Logged: ${r.valueC.toFixed(1)}°C`,
+        description: `${isFever ? "⚠️ Elevated temperature (fever detected)" : "✓ Normal temperature"}${r.isRemeasure ? " (Re-measurement)" : ""}. ${r.reason || "Routine daily measurement"}`,
+        actor: r.recordedBy?.name || "Staff Nurse",
+      });
+    });
+
+    patient.visits.forEach((v) => {
+      timeline.push({
+        id: `vis-${v.id}`,
+        type: "DOCTOR_VISIT",
+        timestamp: v.visitedAt,
+        title: "Clinical Doctor Visit & Assessment",
+        description: `${v.clinicalNote}${v.treatmentPlan ? ` | Treatment: ${v.treatmentPlan}` : ""}${v.medication ? ` | Medication: ${v.medication}` : ""}`,
+        actor: v.doctor?.name || "Attending Physician",
+      });
+    });
+
+    patient.tempRequests.forEach((tr) => {
+      timeline.push({
+        id: `req-${tr.id}`,
+        type: "TEMP_REQUEST",
+        timestamp: tr.requestedAt,
+        title: `Priority Temperature Requested (${tr.priority})`,
+        description: tr.status === "RESOLVED" ? "Resolved by nursing staff reading." : "Pending nurse temperature measurement.",
+        actor: tr.doctor?.name || "Attending Physician",
+      });
+    });
+
+    patient.dischargeEvents.forEach((de) => {
+      timeline.push({
+        id: `dis-${de.id}`,
+        type: "DISCHARGE",
+        timestamp: de.eligibleAt,
+        title: "Discharge Eligibility Met (3-Day Fever-Free Streak)",
+        description: `Patient maintained 3 consecutive calendar days without a fever. Ready for clinical discharge.`,
+        actor: "Automated Clinical Rule Engine",
+      });
+    });
+
+    timeline.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
     res.json({
       patient,
       pipeline: {
         ...pipelineEvaluation,
         streakHistory,
       },
+      streakHistory,
+      timeline,
+      threshold,
+      requiredStreak,
+      todayStr,
       settings,
     });
   } catch (err: any) {

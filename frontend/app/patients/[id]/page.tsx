@@ -44,14 +44,14 @@ import { formatTemp } from "@/lib/utils";
 interface PatientDetails {
   patient: any;
   pipeline: any;
-  streakHistory: Array<{
+  streakHistory?: Array<{
     dateStr: string;
     dayLabel: string;
     status: "FEVER" | "FEVER_FREE" | "UNKNOWN";
     maxTemp: number | null;
     isToday: boolean;
   }>;
-  timeline: Array<{
+  timeline?: Array<{
     id: string;
     type: string;
     timestamp: string;
@@ -60,9 +60,10 @@ interface PatientDetails {
     actor: string;
     details?: any;
   }>;
-  threshold: number;
-  requiredStreak: number;
-  todayStr: string;
+  threshold?: number;
+  requiredStreak?: number;
+  todayStr?: string;
+  settings?: any;
 }
 
 export default function PatientDetailsPage({ params }: { params: { id: string } }) {
@@ -243,20 +244,29 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
     );
   }
 
-  const { patient, pipeline, streakHistory, timeline, threshold, requiredStreak } = data;
-  const isFeverFreeStreakGoalMet = pipeline?.streak >= requiredStreak;
+  const patient = data.patient || {};
+  const pipeline = data.pipeline || {};
+  const threshold = typeof data.threshold === "number" ? data.threshold : (data.settings?.feverThreshold ?? 38.0);
+  const requiredStreak = typeof data.requiredStreak === "number" ? data.requiredStreak : (data.settings?.requiredFeverFreeDays ?? 3);
+  const streakHistory = Array.isArray(data.streakHistory)
+    ? data.streakHistory
+    : Array.isArray(pipeline?.streakHistory)
+    ? pipeline.streakHistory
+    : [];
+  const timeline = Array.isArray(data.timeline) ? data.timeline : [];
+  const isFeverFreeStreakGoalMet = (pipeline?.streak || 0) >= requiredStreak;
   const dayOfStay = Math.max(
     1,
-    Math.ceil((Date.now() - new Date(patient.admittedAt).getTime()) / (1000 * 60 * 60 * 24))
+    Math.ceil((Date.now() - new Date(patient.admittedAt || Date.now()).getTime()) / (1000 * 60 * 60 * 24))
   );
 
   // Prepare temperature chart data (chronological order)
-  const chartData = [...patient.readings]
+  const chartData = [...(patient.readings || [])]
     .sort((a: any, b: any) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime())
     .map((r: any) => ({
       time: new Date(r.recordedAt).toLocaleDateString([], { month: "short", day: "numeric" }) + " " +
             new Date(r.recordedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      temp: r.valueC,
+      temp: typeof r.valueC === "number" ? r.valueC : Number(r.valueC || 0),
       isRemeasure: r.isRemeasure,
     }));
 
@@ -341,7 +351,7 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
               <span>Consecutive Fever-Free Discharge Tracker</span>
             </h2>
             <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-              Strict clinical cure rule: Requires {requiredStreak} consecutive calendar days without a fever (≥ {threshold.toFixed(1)}°C).
+              Strict clinical cure rule: Requires {requiredStreak} consecutive calendar days without a fever (≥ {(threshold ?? 38).toFixed(1)}°C).
             </p>
           </div>
 
@@ -354,7 +364,7 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
 
         {/* 7-Day Circle History Visualizer */}
         <div className="grid grid-cols-7 gap-2 pt-2">
-          {streakHistory.map((day, idx) => {
+          {streakHistory.map((day: any) => {
             const isFever = day.status === "FEVER";
             const isFeverFree = day.status === "FEVER_FREE";
             const isUnknown = day.status === "UNKNOWN";
@@ -381,7 +391,7 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                   )}
                 </div>
                 <span className="text-[10px] font-mono font-bold">
-                  {day.maxTemp ? `${day.maxTemp.toFixed(1)}°C` : "No Temp"}
+                  {typeof day?.maxTemp === "number" ? `${day.maxTemp.toFixed(1)}°C` : "No Temp"}
                 </span>
               </div>
             );
@@ -399,7 +409,7 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
               <span>Temperature Trend</span>
             </h3>
             <span className="text-xs font-semibold text-red-600 flex items-center gap-1">
-              <span className="w-3 h-0.5 bg-red-500 inline-block" /> Threshold ({threshold.toFixed(1)}°C)
+              <span className="w-3 h-0.5 bg-red-500 inline-block" /> Threshold ({(threshold ?? 38).toFixed(1)}°C)
             </span>
           </div>
 
@@ -415,14 +425,14 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                   <XAxis dataKey="time" tick={{ fontSize: 10 }} />
                   <YAxis domain={[35.0, 41.0]} tick={{ fontSize: 10 }} />
                   <Tooltip
-                    formatter={(val: any) => [`${Number(val).toFixed(1)}°C`, "Temperature"]}
+                    formatter={(val: any) => [`${Number(val || 0).toFixed(1)}°C`, "Temperature"]}
                     labelStyle={{ fontSize: 11, fontWeight: "bold" }}
                   />
                   <ReferenceLine
-                    y={threshold}
+                    y={threshold ?? 38.0}
                     stroke="#ef4444"
                     strokeDasharray="4 4"
-                    label={{ value: "Fever Threshold (38.0°C)", position: "insideTopRight", fill: "#ef4444", fontSize: 10 }}
+                    label={{ value: `Fever Threshold (${(threshold ?? 38).toFixed(1)}°C)`, position: "insideTopRight", fill: "#ef4444", fontSize: 10 }}
                   />
                   <Line
                     type="monotone"
@@ -490,7 +500,7 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
         <h3 className="text-base font-bold text-slate-900 dark:text-white">Unified Patient Activity Timeline</h3>
 
         <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-700">
-          {timeline.map((event) => {
+          {timeline.map((event: any) => {
             return (
               <div key={event.id} className="relative group">
                 <span className="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full bg-sky-600 ring-4 ring-white dark:ring-slate-800" />
