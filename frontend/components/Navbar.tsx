@@ -100,7 +100,7 @@ export function Navbar() {
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur dark:bg-slate-900/95 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
+        <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
           {/* Brand Logo & Connection Indicator */}
           <div className="flex items-center gap-3">
             <Link href={user ? (user.role === "ADMIN" ? "/admin" : user.role === "DOCTOR" ? "/doctor" : "/nurse") : "/"} className="flex items-center gap-2 group">

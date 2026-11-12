@@ -483,8 +483,8 @@ function NurseDashboardContent() {
 
       {/* Patient Triage Worklist */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {[...Array(6)].map((_, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+          {[...Array(8)].map((_, i) => (
             <div key={i} className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs space-y-3 animate-pulse">
               <div className="flex items-center justify-between">
                 <div className="h-6 w-16 bg-slate-200 dark:bg-slate-700 rounded-lg" />
@@ -512,7 +512,7 @@ function NurseDashboardContent() {
           <p className="text-xs text-slate-500">All morning rounds have been logged for this view.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
           {tabPatients.map((p) => {
             const isClaimedByMe = p.claim?.nurseId === user?.id;
             const isClaimedByOther = Boolean(p.claim && !isClaimedByMe);

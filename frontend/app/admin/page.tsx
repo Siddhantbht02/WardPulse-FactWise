@@ -445,7 +445,7 @@ export default function AdminDashboardPage() {
 
       {/* Live Ward Board Floor-Plan Grid of 74 Rooms */}
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-3">
           {Array.from({ length: 30 }).map((_, i) => (
             <div key={i} className="h-32 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
           ))}
@@ -465,7 +465,7 @@ export default function AdminDashboardPage() {
           </button>
         </div>
       ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-3">
           {filteredRooms.map(({ room, patient, pipeline }) => {
             // Unoccupied / Cleaning / Free room tile
             if (!patient || room.status !== "OCCUPIED") {

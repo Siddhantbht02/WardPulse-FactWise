@@ -311,11 +311,10 @@ function PatientListContent() {
       <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800">
         <button
           onClick={() => setActiveTab("patients")}
-          className={`pb-3 px-3 text-sm font-bold border-b-2 flex items-center gap-2 transition-all ${
-            activeTab === "patients"
+          className={`pb-3 px-3 text-sm font-bold border-b-2 flex items-center gap-2 transition-all ${activeTab === "patients"
               ? "border-sky-600 text-sky-600 dark:text-sky-400"
               : "border-transparent text-slate-500 hover:text-slate-900"
-          }`}
+            }`}
         >
           <Users className="w-4 h-4" />
           <span>Active Inpatients ({patients.length})</span>
@@ -323,11 +322,10 @@ function PatientListContent() {
 
         <button
           onClick={() => setActiveTab("waitlist")}
-          className={`pb-3 px-3 text-sm font-bold border-b-2 flex items-center gap-2 transition-all ${
-            activeTab === "waitlist"
+          className={`pb-3 px-3 text-sm font-bold border-b-2 flex items-center gap-2 transition-all ${activeTab === "waitlist"
               ? "border-sky-600 text-sky-600 dark:text-sky-400"
               : "border-transparent text-slate-500 hover:text-slate-900"
-          }`}
+            }`}
         >
           <Clock className="w-4 h-4" />
           <span>Waitlist Queue ({waitlist.length})</span>
@@ -378,11 +376,10 @@ function PatientListContent() {
 
             <button
               onClick={() => setFeverOnly(!feverOnly)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 ${
-                feverOnly
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 ${feverOnly
                   ? "bg-red-50 border-red-300 text-red-700 dark:bg-red-950 dark:text-red-300"
                   : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 dark:bg-slate-700"
-              }`}
+                }`}
             >
               <Flame className="w-3.5 h-3.5 text-red-500" />
               <span>Fever Today (≥ 38.0°C)</span>
@@ -838,11 +835,10 @@ function PatientListContent() {
                         type="button"
                         key={room.id}
                         onClick={() => setRegisterRoomId(String(room.id))}
-                        className={`p-2 rounded-lg text-xs font-bold border text-center transition-all ${
-                          registerRoomId === String(room.id)
+                        className={`p-2 rounded-lg text-xs font-bold border text-center transition-all ${registerRoomId === String(room.id)
                             ? "bg-sky-600 text-white border-sky-600 shadow-xs"
                             : "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-600 hover:border-sky-400"
-                        }`}
+                          }`}
                       >
                         {room.roomNumber}
                       </button>

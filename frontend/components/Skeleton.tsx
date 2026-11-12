@@ -198,3 +198,4 @@ export function TableListSkeleton({ rows = 6 }: { rows?: number }) {
     </div>
   );
 }
+

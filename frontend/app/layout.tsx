@@ -52,7 +52,7 @@ export default function RootLayout({
         <AppProvider>
           <div className="min-h-screen flex flex-col">
             <Navbar />
-            <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6">{children}</main>
+            <main className="flex-1 w-full max-w-[1600px] mx-auto p-3 sm:p-6 lg:p-8">{children}</main>
             <MobileTabBar />
             <ToastContainer />
           </div>
