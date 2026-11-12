@@ -313,7 +313,32 @@ export default function DischargeAnalyticsPage() {
         </div>
       </div>
 
-      {activeSection === "discharge" ? (
+      {loading ? (
+        <div className="space-y-6 animate-pulse">
+          <div className="h-20 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-700" />
+              <div className="space-y-1.5">
+                <div className="h-4 w-44 bg-slate-200 dark:bg-slate-700 rounded" />
+                <div className="h-3 w-64 bg-slate-200 dark:bg-slate-700 rounded" />
+              </div>
+            </div>
+            <div className="h-8 w-32 bg-slate-200 dark:bg-slate-700 rounded-xl" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-3">
+                <div className="h-5 w-36 bg-slate-200 dark:bg-slate-700 rounded" />
+                <div className="space-y-2 pt-2">
+                  {[...Array(3)].map((_, j) => (
+                    <div key={j} className="h-32 bg-slate-100 dark:bg-slate-700/60 rounded-xl" />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : activeSection === "discharge" ? (
         /* SECTION 1: DISCHARGE PROCESSING KANBAN */
         <div className="space-y-6">
           {/* Discharge Metrics Bar */}

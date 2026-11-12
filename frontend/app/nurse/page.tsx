@@ -483,7 +483,24 @@ function NurseDashboardContent() {
 
       {/* Patient Triage Worklist */}
       {loading ? (
-        <div className="py-20 text-center text-sm text-slate-500">Loading triage queue...</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs space-y-3 animate-pulse">
+              <div className="flex items-center justify-between">
+                <div className="h-6 w-16 bg-slate-200 dark:bg-slate-700 rounded-lg" />
+                <div className="h-5 w-24 bg-slate-200 dark:bg-slate-700 rounded-full" />
+              </div>
+              <div className="space-y-1.5">
+                <div className="h-4 w-36 bg-slate-200 dark:bg-slate-700 rounded" />
+                <div className="h-3 w-44 bg-slate-200 dark:bg-slate-700 rounded" />
+              </div>
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                <div className="h-4 w-20 bg-slate-200 dark:bg-slate-700 rounded" />
+                <div className="h-8 w-28 bg-slate-200 dark:bg-slate-700 rounded-xl" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : tabPatients.length === 0 ? (
         <div className="py-16 text-center bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
           <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
@@ -860,7 +877,18 @@ function NurseDashboardContent() {
 
 export default function NurseDashboardPage() {
   return (
-    <Suspense fallback={<div className="py-20 text-center text-sm text-slate-500">Loading nurse triage station...</div>}>
+    <Suspense
+      fallback={
+        <div className="space-y-4 animate-pulse">
+          <div className="h-8 w-44 bg-slate-200 dark:bg-slate-700 rounded-xl" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-40 bg-slate-200 dark:bg-slate-700 rounded-2xl" />
+            ))}
+          </div>
+        </div>
+      }
+    >
       <NurseDashboardContent />
     </Suspense>
   );

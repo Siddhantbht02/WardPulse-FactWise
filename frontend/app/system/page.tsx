@@ -133,7 +133,11 @@ export default function SystemStatusPage() {
         </div>
 
         {loading ? (
-          <div className="py-12 text-center text-sm text-slate-500">Loading heartbeat log...</div>
+          <div className="space-y-2 py-2 animate-pulse">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-8 bg-slate-100 dark:bg-slate-700/60 rounded-lg" />
+            ))}
+          </div>
         ) : !data?.heartbeats || data.heartbeats.length === 0 ? (
           <div className="py-12 text-center text-xs text-slate-400">No heartbeat logs recorded yet.</div>
         ) : (

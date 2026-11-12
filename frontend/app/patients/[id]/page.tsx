@@ -39,6 +39,7 @@ import {
 import { useApp } from "@/components/AppContext";
 import { StreakDots } from "@/components/StreakDots";
 import { PipelineBadge } from "@/components/PipelineBadge";
+import { PatientDetailSkeleton } from "@/components/Skeleton";
 import { formatTemp } from "@/lib/utils";
 
 interface PatientDetails {
@@ -230,7 +231,7 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
   };
 
   if (loading) {
-    return <div className="py-24 text-center text-sm text-slate-500">Loading patient record...</div>;
+    return <PatientDetailSkeleton />;
   }
 
   if (!data) {

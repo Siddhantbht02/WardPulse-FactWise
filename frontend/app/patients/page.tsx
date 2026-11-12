@@ -25,6 +25,7 @@ import {
 import { useApp } from "@/components/AppContext";
 import { StreakDots } from "@/components/StreakDots";
 import { PipelineBadge } from "@/components/PipelineBadge";
+import { TableListSkeleton } from "@/components/Skeleton";
 import { formatTemp } from "@/lib/utils";
 
 interface PatientItem {
@@ -390,7 +391,7 @@ function PatientListContent() {
 
           {/* Desktop Table / Mobile Stacked Cards */}
           {loading ? (
-            <div className="py-20 text-center text-sm text-slate-500">Loading patients...</div>
+            <TableListSkeleton rows={8} />
           ) : filteredPatients.length === 0 ? (
             <div className="py-20 text-center bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
               <p className="text-sm font-semibold text-slate-500">No patients match the selected filters.</p>
@@ -907,7 +908,7 @@ function PatientListContent() {
 
 export default function PatientListPage() {
   return (
-    <Suspense fallback={<div className="py-20 text-center text-sm text-slate-500">Loading patients registry...</div>}>
+    <Suspense fallback={<TableListSkeleton rows={8} />}>
       <PatientListContent />
     </Suspense>
   );
